@@ -34,7 +34,7 @@ def convert_api_response(repo_info, releases_info, dependency_info):
         "dependency_project_id": dependencies,
         "releases": releases,
         "description": repo_info['description'],
-        "project_license": repo_info['license']['name'],
+        "project_license": repo_info.get('license', {}).get('name') if repo_info.get('license') else 'No License',
         "html_url": repo_info['html_url'],
         "language": repo_info['language'],
         "default_branch": repo_info['default_branch'],
@@ -53,7 +53,8 @@ def convert_api_response(repo_info, releases_info, dependency_info):
 
 
 """
-    Get all info of a repo and assemble 
+    Get all info of a repo by its full_name and assemble the info
+    PS: This function only keep the repo using C/C++ as its main language
     
     Parameters:
     - full_name (str): The full name of the repo. It should look like 'owner/repo_name'
@@ -64,6 +65,11 @@ def assemble_api_response(full_name):
     if repo_info is None:
         logging.warning(f"Cannot find repo: {full_name}")
         return None
+    # Limit the primary language to C or C++
+    if repo_info['language'] not in ('C', 'C++'):
+        logging.info(f"The Main Language of Repo: {full_name} is not C/C++")
+        return None
+
     releases_info = client.get_releases(full_name)
     dependency_info = client.get_dependencies(repo_info['owner']['login'], repo_info['name'], 1)
 

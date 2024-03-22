@@ -3,11 +3,12 @@ import logging
 import time
 import configparser
 import os
+from datetime import datetime
 
 import requests
 
 """
-    A decorator for retrying a function if an exception is raised.
+    A decorator for retrying a function if an exception is raised or rate limit exceeded.
 
     Parameters:
     - retries (int): The maximum number of attempts.
@@ -17,18 +18,52 @@ def retry(retries=3, backoff_factor=1):
     def decorator_retry(func):
         @functools.wraps(func)
         def wrapper_retry(*args, **kwargs):
-            _retries, _backoff_factor = retries, backoff_factor
-            for attempt in range(1, retries + 1):
+            _retries = retries
+            for attempt in range(1, _retries + 1):
                 try:
                     response = func(*args, **kwargs)
                     if response.status_code == 200:
-                        return response
+                        data = response.json()
+                        if 'errors' in data and len(data['errors']) > 0:
+                            # retry when the code is 200 but have errors in response
+                            if data['errors'][0]['message'] in ['loading', 'timeout']:
+                                time.sleep(3)
+                                continue
+                            else:
+                                return response
+                        else:
+                            return response
+                    elif response.status_code < 500 and response.status_code not in (403, 429):
+                        # Log client-side errors and do not attempt retries
+                        error_message = f"Client error: HTTP status_code {response.status_code}"
+                        logging.error(error_message)
+                        raise RuntimeError(error_message)
+                    elif response.status_code in (403, 429):
+                        """
+                            Rate limit exceeded (https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#exceeding-the-rate-limit)
+                        """
+                        retry_after = response.headers.get('Retry-After')
+                        rate_limit_reset = response.headers.get('X-RateLimit-Reset')
+                        if retry_after:
+                            sleep_time = int(retry_after)
+                        elif rate_limit_reset:
+                            # Calculate sleep time
+                            current_time = datetime.utcnow().timestamp()
+                            sleep_time = max(int(rate_limit_reset) - current_time, 1)
+                        else:
+                            # No specific guidance, use exponential backoff
+                            sleep_time = backoff_factor * (2 ** (attempt - 1))
+                        logging.warning(f"Rate limit exceeded. Retrying in {sleep_time} seconds...")
+                        time.sleep(sleep_time)
+                        continue
+                    else:
+                        # For server-side errors, implement retry mechanism
+                        response.raise_for_status()
                 except requests.exceptions.RequestException as e:
-                    logging.warning(f"Attempt {attempt} failed: {e}")
                     if attempt == _retries:
                         raise
-                    sleep_time = _backoff_factor * (2 ** (attempt - 1))
-                    logging.warning(f"Retrying in {sleep_time} seconds...")
+                    sleep_time = backoff_factor * (2 ** (attempt - 1))
+                    logging.warning(f"Attempt {attempt} failed: {e}. Retrying in {sleep_time} seconds...")
                     time.sleep(sleep_time)
 
         return wrapper_retry
@@ -79,25 +114,7 @@ class GitHub_Api:
         else:
             raise ValueError(f"Invalid query type: {query_type}")
 
-        if response.status_code == 200:
-            data = response.json()
-            if 'errors' in data and len(data['errors']) > 0:
-                # retry when the code is 200 but have errors in response
-                if data['errors'][0]['message'] in ['loading', 'timeout']:
-                    time.sleep(3)
-                    return self.query(query_type, url, headers, q)
-                else:
-                    return response
-            else:
-                return response
-        elif response.status_code < 500:
-            # Log client-side errors and do not attempt retries
-            error_message = f"Client error: HTTP status_code {response.status_code}"
-            logging.error(error_message)
-            raise RuntimeError(error_message)
-        else:
-            # For server-side errors, implement retry mechanism
-            response.raise_for_status()
+        return response
 
     """
         Search repo info by keyword
