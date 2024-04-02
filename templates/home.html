@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center; /* Center content horizontally */
+            align-items: center; /* Center content vertically */
+            height: 100vh; /* Full viewport height */
+            flex-direction: column; /* Stack elements vertically */
+        }
+
+        header, main {
+            margin-bottom: 20px; /* Add space between logo/header and search bar */
+            text-align: center; /* Center text */
+        }
+
+        form {
+            text-align: center; /* Align form elements to center */
+        }
+
+        /* Additional styling for the search input and button */
+        input[type="text"] {
+            padding: 10px;
+            width: 400px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button[type="submit"], a > button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background-color: transparent; /* Remove background color */
+            color: gray; /* Change text color */
+            border-radius: 5px;
+            cursor: pointer;
+            transition: color 0.3s; /* Add transition effect */
+        }
+
+        button[type="submit"]:hover, a > button:hover {
+            color: #2980b9; /* Change text color on hover */
+        }
+
+        /* Random text transform */
+        .random-transform {
+            text-transform: lowercase;
+            display: inline-block;
+        }
+        .random-transform:hover {
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Add your logo here -->
+        <img src="/static/logo.png" alt="Logo" width="200px">
+    </header>
+
+    <main>
+        <h1>Web Scrapper 2024</h1>
+        <p id="content">Yisu Thomas Manvi Weiwei Yao</p>
+
+        <script>
+        function randomFontSize() {
+            var content = document.getElementById("content");
+            var words = content.innerText.split(" ");
+            content.innerHTML = "";
+
+            words.forEach(function(word) {
+                var span = document.createElement("span");
+                span.textContent = word;
+                var fontSize = Math.floor(Math.random() * 20) + 10; // Random font size between 10 and 30 pixels
+                span.style.fontSize = fontSize + "px";
+                content.appendChild(span);
+
+                var br = document.createElement("br");
+                content.appendChild(br); // Add line break after each word
+            });
+        }
+
+        // Call the randomFontSize function when the page loads
+        window.onload = randomFontSize;
+    </script>
+
+        <br>
+        <form action="/search" method="GET">
+            <input type="text" name="query" placeholder="Search...">
+        </form>
+
+        <br>
+
+        <a href="/Keyword"><button>Keyword</button></a>
+        <a href="/Language"><button>Language</button></a>
+        <a href="/License"><button>License</button></a>
+        <a href="/compare"><button>Compare</button></a>
+
+    </main>
+
+    <script>
+        // Function to submit the form when Enter key is pressed
+        document.getElementById("searchInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault(); // Prevent the default form submission
+                document.getElementById("searchForm").submit(); // Submit the form
+            }
+        });
+    </script>
+</body>
+</html>

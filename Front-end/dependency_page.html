@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>GitHub Web Scrapper</title>
+    <script src="echarts.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  </head>
+  <body>
+    <style>
+      #main,
+      html,
+      body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #main {
+        height: 1200px;
+      }
+      .top-bar {
+        width: 100%;
+        height: 50px;
+        background-color: black;
+        color: white;
+        line-height: 50px;
+        padding-left: 20px;
+        font-size: 24px;
+      }
+      .back-arrow {
+        position: absolute;
+        top: 80px;
+        left: 50px;
+        font-size: 36px;
+        cursor: pointer;
+      }
+    </style>
+    <div class="top-bar">GitHub Web Scrapper</div>
+    <div class="back-arrow" onclick="history.back();"><i class="fas fa-arrow-left"></i></div>
+    <div id="main"></div>
+    <script type="text/javascript">
+      var ROOT_PATH = 'http://localhost:8000';
+
+      var chartDom = document.getElementById('main');
+      var myChart = echarts.init(chartDom);
+      window.addEventListener('resize', function() {
+        myChart.resize();
+      });
+      var option;
+
+      myChart.showLoading();
+      $.get(ROOT_PATH + '/get_dependency', { full_name: "edsu/xkcd2347" }, function (data) {
+        myChart.hideLoading();
+        processNewData(data, '');
+        myChart.setOption(
+          (option = {
+            tooltip: {
+              trigger: 'item',
+              triggerOn: 'mousemove',
+              formatter: function (params) {
+                return 'License: ' + (params.data.project_license ? params.data.project_license : 'None') 
+                      + '<br>Last Update: ' + (params.data.updated_at ? params.data.updated_at : 'None');
+              }
+            },
+            series: [
+              {
+                type: 'tree',
+                data: [data],
+                left: '2%',
+                right: '2%',
+                top: '20%',
+                bottom: '20%',
+                symbol: 'emptyCircle',
+                symbolSize: 15,
+                orient: 'vertical',
+                expandAndCollapse: true,
+                label: {
+                  position: 'top',
+                  rotate: -90,
+                  verticalAlign: 'middle',
+                  align: 'right',
+                  fontSize: 11
+                },
+                leaves: {
+                  label: {
+                    position: 'bottom',
+                    rotate: -90,
+                    verticalAlign: 'middle',
+                    align: 'left'
+                  }
+                },
+                animationDurationUpdate: 750
+              }
+            ]
+          })
+        );
+
+        myChart.on('click', function (params) {
+            get_repo_info(params, 'click');
+        });
+
+        function get_repo_info(params, eventType) {
+            if (params.componentType === 'series' && params.seriesType === 'tree') {
+                var nodeName = params.data.full_name;
+
+                // Check if the node already has the data from the API call
+                if (params.data.apiCalled) {
+                    return;
+                }
+                
+                $.get(ROOT_PATH + '/get_dependency', { full_name: nodeName }, function (newData) {
+                    var rootNode = option.series[0].data[0];
+
+                    params.data.apiCalled = true;
+
+                    processNewData(newData, params.data.name || '');
+                    
+                    replaceCurrentNodeData(params.data, newData);
+
+                    myChart.setOption({
+                        series: [{
+                            data: [rootNode]
+                        }]
+                    });
+                });
+            }
+        }
+
+        function processNewData(node, parentName) {
+            if (!node) return;
+            var originalName = node.name;
+            node.name = parentName ? parentName + ':' + originalName : originalName;
+            node.label = {
+                show: true,
+                formatter: function(params) {
+                    return originalName;
+                }
+            };
+            // if (node.children && node.children.length > 0) {
+            //     node.children.forEach(function(childNode) {
+            //         processNewData(childNode, node.name);
+            //     });
+            // }
+        }
+
+        // DFS
+        function replaceCurrentNodeData(targetNodeData, newData) {
+            var rootNode = option.series[0].data[0];
+
+            function replaceNode(node, targetNodeData, newData) {
+                if (node.children) {
+                    for (let i = 0; i < node.children.length; i++) {
+                        // If the target node is found, replace it
+                        if (node.children[i].full_name === targetNodeData.full_name) {
+                            node.children[i] = newData;
+                            return true;
+                        }
+                        // Otherwise, continue searching in the child nodes of the current node
+                        if (replaceNode(node.children[i], targetNodeData, newData)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            replaceNode(rootNode, targetNodeData, newData);
+        }
+
+      });
+
+      option && myChart.setOption(option);
+    </script>
+  </body>
+</html>
