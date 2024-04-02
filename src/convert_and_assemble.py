@@ -1,7 +1,7 @@
 import logging
 
 from src.query_github_api import GitHub_Api
-
+from preprocess_text import preprocess_text
 """
     Put all the info into an object for storage
 """
@@ -34,6 +34,8 @@ def convert_api_response(repo_info, releases_info, dependency_info):
         "dependency_project_id": dependencies,
         "releases": releases,
         "description": repo_info['description'],
+        "description_tags": preprocess_text(repo_info['description']),
+        "description_tags":  repo_info['description'],
         "project_license": repo_info.get('license', {}).get('name') if repo_info.get('license') else 'No License',
         "html_url": repo_info['html_url'],
         "language": repo_info['language'],
