@@ -1,7 +1,8 @@
 import pymongo
 from pymongo import MongoClient
 import datetime
-
+from preprocess_text import preprocess_text
+from database_compair import num_in_common
 
 class DatabaseManager:
     def __init__(self, mongo_host, mongo_port):
@@ -96,13 +97,29 @@ class DatabaseManager:
                 'stars', 'forks', 'watchers', 'open_issues', 'created_at', 
                 'updated_at', 'pushed_at', etc. optional"""
         query = {}
-        if language:
-            query['language'] = language
-        if license:
-            query['project_license'] = license
+
+        # Multiple Keywords means multiple searches
         if keyword:
-            query['name'] = keyword
-        return self.find(query, limit = num, sort_by = category)
+            # First confirm more than one word and preproccess it
+            words = preprocess_text(keyword)
+
+            # Perform search on each word and return results
+            if len(keyword) > 1:
+                results_per_keyword = []
+                for i in range(len(keyword)):
+                    query['name'] = words[i]
+                    results_per_keyword.append(self.find(query[i], limit = num, sort_by = category))
+                # Grab the "num" entries by most in common
+                return num_in_common(num, results_per_keyword)
+            else:
+                query['name'] = words[0]
+                return self.find(query, limit = num, sort_by = category)
+        else:    
+            if language:
+                query['language'] = language
+            if license:
+                query['project_license'] = license
+            return self.find(query, limit = num, sort_by = category)
         
 def insertion_test():
     data=[{'project_id': 10000, 
