@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset = "utf-8">
+  <meta name = "viewport" content = "width=device-width, initial-scale=1.0">
+  <title>GitHub Web Scraper</title>
+  <script src = "echarts.js"></script>
+  <script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src = "https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <script src = "https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.1/underscore-min.js"></script>
+  <link rel = "stylesheet" href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #main {
+      height: 100%;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .top-bar {
+      width: 100%;
+      height: 50px;
+      background-color: #444444;
+      color: white;
+      line-height: 50px;
+      padding-left: 20px;
+      font-size: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .search-bar {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .search-bar input[type="text"] {
+      width: 800px;
+      height: 30px;
+      padding: 5px;
+      font-size: 16px;
+      border-radius: 50px;
+    }
+    .search-bar button {
+      height: 40px;
+      padding: 5px 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .dropdown-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .dropdown-wrapper {
+      margin-top: 20px;
+    }
+    .dropdown-wrapper select {
+      width: 150px;
+      padding: 10px;
+      font-size: 12px;
+      border: 0px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      margin-left: 50px;
+      margin-right: 50px;
+    }
+    .compare-button {
+      position: absolute;
+      top: 60px;
+      right: 100px;
+      padding: 10px 20px;
+      font-size: 28px;
+      border: 0px solid grey;
+      color: grey;
+      border-radius: 50px;
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* Repository container style */
+    #repositoryInfo {
+      display: flex;
+      justify-content: space-between;
+    }
+    .repository-left {
+      width: calc(33.33% - 50px);
+      padding-right: 10px;
+      text-align: left
+    }
+    .repository-mid {
+      width: calc(33.33% - 100px);
+      text-align: center;
+    }
+    .repository-right {
+      width: calc(33.33% - 50px);
+      padding-left: 10px;
+      text-align: right
+    }
+    .repository-container {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      margin-bottom: 20px;
+      background-color: white;
+    }
+    /* Repository name link style */
+    .repo-link {
+      color: blue;
+      font-size: 40px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    /* Metadata style */
+    .metadata {
+      font-size: 15px;
+      color: #666;
+    }
+
+    .repository-mid p.license {
+      font-size: 24px;
+    }
+
+    .repository-right p.dependency {
+      font-size: 20px;
+    }
+
+    .space {
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+<div class = "top-bar">
+  <span onclick = "window.location.href='home.html';" style = "cursor:pointer;">GitHub Web Scraper</span>
+</div>
+<div id = "main">
+  <div class = "search-bar">
+    <form action = "/search" method = "GET">
+      <input id = "searchInput" type = "text" name = "query" placeholder = " Enter search keyword... ">
+    </form>
+  </div>
+  <div class = "dropdown-container">
+    <div class = "dropdown-wrapper">
+      <!-- Language dropdown -->
+      <label for = "Language"></label>
+      <select id = "Language">
+        <option value = "" disabled selected>Select Language</option>
+        <option value = "C">C</option>
+        <option value = "C++">C++</option>
+      </select>
+      <!-- License dropdown -->
+      <label for = "License"></label>
+      <select id = "License">
+        <option value = "" disabled selected>Select License</option>
+        <option value = "MIT">MIT</option>
+        <option value = "GPL">GPL</option>
+        <option value = "Apache">Apache</option>
+        <option value = "BSD">BSD</option>
+      </select>
+      <!-- Category dropdown -->
+      <label for = "Category"></label>
+      <select id = "Category">
+        <option value = "" disabled selected>Select Category</option>
+        <option value = "Recent Updated">Recent Updated</option>
+        <option value = "Most Popular">Most Popular</option>
+        <option value = "Without Dependency">Without Dependency</option>
+        <option value = "TBD">TBD</option>
+      </select>
+    </div>
+    <!-- Compare button -->
+    <a href="./compare_page.html" class="compare-button">Compare</a>
+  </div>
+
+  <div id = "repositoryInfo">
+    <!-- This will be dynamically populated by JavaScript -->
+  </div>
+</div>
+
+<script id = "repository-template" type = "text/template">
+  <% repositories.forEach(repository => { %>
+  <div class = "repository-container">
+    <div class = "repository-left">
+      <p class = "metadata"><%= repository.owner_name %> <span class = "space"></span> • <span class = "space"></span> <%= repository.updated_at %> <span class = "space"></span> • <span class = "space"></span> V<%= repository.releases[0] ? repository.releases[0].name : 'N/A' %></p>
+      <h2><a href = "<%= repository.html_url %>" class = "repo-link" target = "_blank"><%= repository.name %></a></h2>
+      <p><%= repository.description || 'N/A' %></p>
+      <p class = "metadata"><%= repository.language || 'N/A' %> <span class = "space"></span> • <span class="space"></span> Issues:</strong> <%= repository.open_issues || 'N/A' %> <span class = "space"></span> • <span class = "space"></span> <%= repository.pushed_at ? repository.pushed_at.substring(0, 10) : 'N/A' %></p>
+    </div>
+
+    <div class = "repository-mid">
+      <p class = "metadata">Stars:</strong> <%= repository.stars || 'N/A' %> <span class = "space"></span> • <span class = "space"></span>Watchers:</strong> <%= repository.watchers || 'N/A' %></p>
+      <p class = "license"> <%= repository.project_license || 'N/A' %></p>
+    </div>
+
+    <div class = "repository-right">
+      <p class = "dependency">Dependency</p>
+      <ul>
+        <% repository.dependency_project_id.slice(0, 4).forEach(dependency => { %>
+        <li><%= dependency %></li>
+        <% }); %>
+      </ul>
+      <%  if(repository.dependency_project_id.length > 4) { %>
+      <a href = "dependency_page.html" class = "read more..."> read more...</a>
+      <% } %>
+    </div>
+  </div>
+  <% }); %>
+</script>
+
+<script>
+  function renderRepositoryInfo(data) {
+    const template = document.getElementById('repository-template').innerHTML;
+    const rendered = _.template(template)({ repositories: data });
+    document.getElementById('repositoryInfo').innerHTML = rendered;
+  }
+
+  const testData = [
+    {
+      "_id": "660f752d3cd48ed54d6b21a2",
+      "created_at": "2015-06-15T20:28:27Z",
+      "default_branch": "main",
+      "dependency_project_id": [
+        "pytest-dev/pytest-django",
+        "actions/stale",
+        "MrSenko/sphinx-removed-in",
+        "hynek/build-and-inspect-python-package",
+        "hukkin/tomli",
+        "django/django",
+        "pytest-dev/pytest-asyncio",
+        "pytest-dev/pytest-mock",
+        "python-trio/pytest-trio",
+        "pypa/packaging",
+        "pytest-dev/pytest-rerunfailures",
+        "pytest-dev/pytest-cov",
+        "pytest-dev/pytest-twisted",
+        "The-Compiler/pytest-xvfb",
+        "actions/checkout",
+        "pytest-dev/pytest-html",
+        "agronholm/anyio",
+        "python-trio/sphinxcontrib-trio",
+        "codecov/codecov-action",
+        "asmeurer/pytest-flakes",
+        "pypa/gh-action-pypi-publish",
+        "s0undt3ch/pluggy",
+        "softprops/action-gh-release",
+        "Teemu/pytest-sugar",
+        "tartley/colorama",
+        "asottile/pygments-pytest",
+        "actions/download-artifact",
+        "pallets/pallets-sphinx-themes",
+        "twisted/twisted",
+        "pytest-dev/iniconfig",
+        "peter-evans/create-pull-request",
+        "actions/setup-python",
+        "python-trio/exceptiongroup",
+        "missinglinkelectronics/sphinxcontrib-svg2pdfconverter",
+        "sphinx-doc/sphinx",
+        "actions/cache"
+      ],
+      "description": "The pytest framework makes it easy to write small tests, yet scales to support complex functional testing",
+      "disabled": false,
+      "forks": 2480,
+      "full_name": "pytest-dev/pytest",
+      "html_url": "https://github.com/pytest-dev/pytest",
+      "language": "Python",
+      "master_branch": null,
+      "name": "pytest",
+      "open_issues": 853,
+      "owner_id": 8897583,
+      "owner_name": "pytest-dev",
+      "project_id": 37489525,
+      "project_license": "MIT License",
+      "pushed_at": "2024-04-03T22:24:34Z",
+      "releases": [
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/8.1.1",
+          "name": "8.1.1",
+          "tag_name": "8.1.1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/8.1.0",
+          "name": "8.1.0",
+          "tag_name": "8.1.0"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/8.0.2",
+          "name": "8.0.2",
+          "tag_name": "8.0.2"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/8.0.1",
+          "name": "8.0.1",
+          "tag_name": "8.0.1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/8.0.0",
+          "name": "pytest 8.0.0 (2024-01-27)",
+          "tag_name": "8.0.0"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/8.0.0rc2",
+          "name": "8.0.0rc2",
+          "tag_name": "8.0.0rc2"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/8.0.0rc1",
+          "name": "pytest 8.0.0rc1 (2023-12-30)",
+          "tag_name": "8.0.0rc1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.4.4",
+          "name": "pytest 7.4.4 (2023-12-31)",
+          "tag_name": "7.4.4"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/v7.4.3",
+          "name": "pytest 7.4.3 (2023-10-24)",
+          "tag_name": "v7.4.3"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.4.2",
+          "name": "pytest 7.4.2 (2023-09-07)",
+          "tag_name": "7.4.2"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.4.1",
+          "name": "pytest 7.4.1 (2023-09-02)",
+          "tag_name": "7.4.1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.4.0",
+          "name": null,
+          "tag_name": "7.4.0"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.3.2",
+          "name": null,
+          "tag_name": "7.3.2"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.3.1",
+          "name": null,
+          "tag_name": "7.3.1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.3.0",
+          "name": null,
+          "tag_name": "7.3.0"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.2.2",
+          "name": null,
+          "tag_name": "7.2.2"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.2.1",
+          "name": null,
+          "tag_name": "7.2.1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.2.0",
+          "name": null,
+          "tag_name": "7.2.0"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.1.3",
+          "name": null,
+          "tag_name": "7.1.3"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.1.2",
+          "name": null,
+          "tag_name": "7.1.2"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.1.1",
+          "name": null,
+          "tag_name": "7.1.1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.1.0",
+          "name": "7.1.0",
+          "tag_name": "7.1.0"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.0.1",
+          "name": "7.0.1",
+          "tag_name": "7.0.1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.0.0",
+          "name": null,
+          "tag_name": "7.0.0"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/7.0.0rc1",
+          "name": null,
+          "tag_name": "7.0.0rc1"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/6.2.5",
+          "name": null,
+          "tag_name": "6.2.5"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/6.2.4",
+          "name": null,
+          "tag_name": "6.2.4"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/6.2.3",
+          "name": null,
+          "tag_name": "6.2.3"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/6.2.2",
+          "name": null,
+          "tag_name": "6.2.2"
+        },
+        {
+          "html_url": "https://github.com/pytest-dev/pytest/releases/tag/6.2.1",
+          "name": null,
+          "tag_name": "6.2.1"
+        }
+      ],
+      "stars": 11275,
+      "updated_at": "2024-04-05T03:18:42Z",
+      "watchers": 11275
+    }
+  ];
+
+  renderRepositoryInfo(testData);
+</script>
+
+</body>
+</html>>

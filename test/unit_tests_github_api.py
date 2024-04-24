@@ -1,11 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-
-from query_github_api import GitHub_Api
+from src.query_github_api import GitHub_Api
 
 
 class TestGitHubClient(unittest.TestCase):

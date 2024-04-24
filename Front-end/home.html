@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center; /* Center content horizontally */
+            align-items: center; /* Center content vertically */
+            height: 100vh; /* Full viewport height */
+            flex-direction: column; /* Stack elements vertically */
+        }
+
+
+        /* Grey bar on the top*/
+        .grey-bar {
+            background-color: #f2f2f2;
+            height: 40px;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding-left: 20px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Web Scrapper button style */
+        .web-scraper-button {
+            background-color: transparent;
+            border: none;
+            color: #333;
+            font-size: 20px;
+            cursor: pointer;
+            text-decoration: none;
+            font-family: "Trebuchet MS", serif; /* Set font family */
+            font-weight: bold; /* Set font weight to bold */
+            font-style: italic; /* Set font style to italic */
+        }
+
+        header, main {
+            margin-bottom: 20px; /* Add space between logo/header and search bar */
+            text-align: center; /* Center text */
+        }
+
+        form {
+            text-align: center; /* Align form elements to center */
+        }
+
+        /* Search bar */
+        input[type="text"] {
+        justify-content: center;
+            padding: 15px;
+            width: 600px;
+            font-size: 24px;
+            border: 3px solid #ccc;
+            border-radius: 50px;
+            font-weight: bold; /* Set font weight to bold */
+        }
+
+        /* Dropdown wrapper */
+        .dropdown-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px; /* Add margin at the top */
+        }
+
+        /* Dropdown style */
+        select {
+            width: 200px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 5px; /* Add some margin between dropdowns */
+            margin-left: 25px; /* Add horizontal margin */
+            margin-right: 25px; /* Add horizontal margin */
+            font-family: "Trebuchet MS", serif; /* Set font family */
+        }
+
+        /* Compare button style */
+        .compare-button {
+            position: fixed;
+            top: 70px;
+            right: 100px;
+            padding: 15px 50px;
+            font-size: 32px;
+            border: 4px solid grey;
+            color: grey;
+            border-radius: 50px;
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: bold; /* Set font weight to bold */
+            font-family: "Trebuchet MS", serif; /* Set font family */
+        }
+
+        /* Random text transform */
+        .random-transform {
+            text-transform: lowercase;
+            display: inline-block;
+        }
+        .random-transform:hover {
+            text-transform: uppercase;
+        }
+
+    </style>
+</head>
+<body>
+
+
+        <header>
+            <img src="../static/logo.png" alt="Logo" width="250px">
+        </header>
+
+        <main>
+            <!--
+            <h1>Web Scrapper 2024</h1>
+            <p id="content">Yisu Thomas Manvi Weiwei Yao</p>
+-->
+            <script>
+            function randomFontSize() {
+            var content = document.getElementById("content");
+            var words = content.innerText.split(" ");
+            content.innerHTML = "";
+
+            words.forEach(function(word) {
+                var span = document.createElement("span");
+                span.textContent = word;
+                var fontSize = Math.floor(Math.random() * 20) + 10; // Random font size between 10 and 30 pixels
+                span.style.fontSize = fontSize + "px";
+                content.appendChild(span);
+
+                var br = document.createElement("br");
+                content.appendChild(br); // Add line break after each word
+            });
+        }
+
+        // Call the randomFontSize function when the page loads
+        window.onload = randomFontSize;
+
+        // Function to submit the form when Enter key is pressed
+        document.getElementById("searchInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault(); // Prevent the default form submission
+                document.getElementById("searchForm").submit(); // Submit the form
+            }
+        });
+            </script>
+
+        <br>
+        <form action = "./list_page.html" method = "GET">
+            <input id = "searchInput" type = "text" name = "query" placeholder = "Enter search keyword">
+        </form>
+
+        <div class="grey-bar">
+            <a href = "/" class="web-scraper-button">Web Scrapper</a>
+        </div>
+
+        <br>
+
+            <div class = "dropdown-container">
+                <div class = "dropdown-wrapper">
+        <!-- Language dropdown -->
+            <!-- <label for = "Language">Language</label> -->
+            <select id = "Language">
+                <option value = "" disabled selected>Select Language</option>
+                <option value = "C">C</option>
+                <option value = "C++">C++</option>
+            </select>
+
+        <!-- License dropdown -->
+            <!-- <label for = "License">License</label> -->
+            <select id = "License">
+                <option value = "" disabled selected>Select License</option>
+                <option value = "MIT">MIT</option>
+                <option value = "GPL">GPL</option>
+                <option value = "Apache">Apache</option>
+                <option value = "BSD">BSD</option>
+            </select>
+
+        <!-- Category dropdown -->
+            <!-- <label for = "Category">Category</label> -->
+            <select id = "Category">
+                <option value = "" disabled selected>Select Category</option>
+                <option value = "Recent Updated">Recent Updated</option>
+                <option value = "Most Popular">Most Popular</option>
+                <option value = "Without Dependency">Without Dependency</option>
+                <option value = "TBD">TBD</option>
+            </select>
+            </div>
+
+        <!-- Compare button -->
+        <a href = "./compare_page.html" class="compare-button">Compare</a>
+        <br>
+
+    </main>
+</body>
+</html>
